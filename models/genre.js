@@ -1,15 +1,15 @@
-var mongoose = require("mongoose");
+const { DataTypes } = require('sequelize');
 
-var Schema = mongoose.Schema;
+const genreSchema = {
+  name: { type: DataTypes.STRING(100), allowNull: false, validate: {
+    len: [3, 100] }  // minLength: 3, maxLength: 100
+  },
+  url: { type: DataTypes.VIRTUAL, get() {  // Virtual for this genre instance URL.
+    return "/catalog/genre/" + this.id;  
+  }}
+};
 
-var GenreSchema = new Schema({
-  name: { type: String, required: true, minLength: 3, maxLength: 100 },
-});
-
-// Virtual for this genre instance URL.
-GenreSchema.virtual("url").get(function () {
-  return "/catalog/genre/" + this._id;
-});
+const genreModel = (sequelize) => sequelize.define('Genre', genreSchema, { tableName: 'GENRE_TEST_1' });
 
 // Export model.
-module.exports = mongoose.model("Genre", GenreSchema);
+module.exports = genreModel;

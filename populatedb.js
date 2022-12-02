@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 //console.log('This script populates some test books, authors, genres and bookinstances to your database. Specified database as argument - e.g.: populatedb mongodb+srv://cooluser:coolpassword@cluster0.a9azn.mongodb.net/local_library?retryWrites=true');
-console.log('This script populates some test authors to your database.');
+console.log('This script populates some test books, authors, and genres to your database.');
 
 // Get arguments passed on command line
 var userArgs = process.argv.slice(2);
@@ -14,9 +14,9 @@ const Sequelize = require('sequelize');
 const sequelize = new Sequelize(userArgs[0]);
 
 var async = require('async');
-var Book = require('./models/book');
-var Author = require('./models/author')(sequelize);  // author is first module to be sequelized
-var Genre = require('./models/genre');
+var Book = require('./models/book')(sequelize);  // book is third module to be sequelized
+var Author = require('./models/author')(sequelize);  // author was first module to be sequelized
+var Genre = require('./models/genre')(sequelize);  // genre is second module to be sequelized
 var BookInstance = require('./models/bookinstance');
 
 
@@ -35,8 +35,8 @@ function authorCreate(first_name, family_name, d_birth, d_death, cb) {
   var author = Author.build(authordetail);
   
   author.save().then((result) => {
-    console.log('New Author: ' + result.name);
-    authors.push(result);
+    console.log('New Author: ' + author.name);
+    authors.push(author);
     cb(null, result);
   }).catch((err) => {
     cb(err, null);
@@ -44,40 +44,37 @@ function authorCreate(first_name, family_name, d_birth, d_death, cb) {
 }
 
 function genreCreate(name, cb) {
-  /*var genre = new Genre({ name: name });
+  var genre = Genre.build({ name: name });
        
-  genre.save(function (err) {
-    if (err) {
-      cb(err, null);
-      return;
-    }
-    console.log('New Genre: ' + genre);
-    genres.push(genre)
-    cb(null, genre);
-  }   );*/
-  cb(null, null);  //TODO: remove this line once function has been sequelized
+  genre.save().then((result) => {
+    console.log('New Genre: ' + genre.name);
+    genres.push(genre);
+    cb(null, result);
+  }).catch((err) => {
+    cb(err, null);
+  });
 }
 
 function bookCreate(title, summary, isbn, author, genre, cb) {
   bookdetail = { 
     title: title,
     summary: summary,
-    author: author,
-    isbn: isbn
-  }
-  if (genre != false) bookdetail.genre = genre;
+    authorId: author.id,
+    isbn: isbn,
+  };
     
-  /*var book = new Book(bookdetail);    
-  book.save(function (err) {
-    if (err) {
-      cb(err, null)
-      return
-    }
-    console.log('New Book: ' + book);
-    books.push(book)
-    cb(null, book)
-  }  );*/
-  cb(null, null);  //TODO: remove this line once function has been sequelized  
+  var book = Book.build(bookdetail);
+
+  book.save().then((savingResult) => {
+    if (genre != false) return book.addGenres(genre.map((genreModel) => genreModel.id));  // the map is a workaround for not being able to pass the genre instances directly to addGenres
+    return savingResult;
+  }).then((result) => {
+    console.log('New Book: ' + book.title);
+    books.push(book);
+    cb(null, result);
+  }).catch((err) => {
+    cb(err, null);
+  });
 }
 
 
@@ -221,7 +218,9 @@ sequelize.sync().then(() => {  // sync the tables first, in case any don't exist
       else {
           //console.log('BOOKInstances: '+bookinstances);
           console.log('AUTHORS: '+authors.map((author) => '"'+author.name+'"'));  //TODO: remove this when bookinstances has been populated
-          
+          console.log('GENRES: '+genres.map((genre) => '"'+genre.name+'"'));  //TODO: remove this when bookinstances has been populated
+          console.log('BOOKS: '+books.map((book) => '"'+book.title+'"'));  //TODO: remove this when bookinstances has been populated
+
       }
       // All done, disconnect from database
       sequelize.close();
