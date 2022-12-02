@@ -1,54 +1,50 @@
 #! /usr/bin/env node
 
-console.log('This script populates some test books, authors, genres and bookinstances to your database. Specified database as argument - e.g.: populatedb mongodb+srv://cooluser:coolpassword@cluster0.a9azn.mongodb.net/local_library?retryWrites=true');
+//console.log('This script populates some test books, authors, genres and bookinstances to your database. Specified database as argument - e.g.: populatedb mongodb+srv://cooluser:coolpassword@cluster0.a9azn.mongodb.net/local_library?retryWrites=true');
+console.log('This script populates some test authors to your database.');
 
 // Get arguments passed on command line
 var userArgs = process.argv.slice(2);
-/*
-if (!userArgs[0].startsWith('mongodb')) {
-    console.log('ERROR: You need to specify a valid mongodb URL as the first argument');
-    return
+if (!userArgs[0].startsWith('mysql')) {
+    console.log('ERROR: You need to specify a valid mysql URI as the first argument');
+    return;
 }
-*/
-var async = require('async')
-var Book = require('./models/book')
-var Author = require('./models/author')
-var Genre = require('./models/genre')
-var BookInstance = require('./models/bookinstance')
+
+const Sequelize = require('sequelize');
+const sequelize = new Sequelize(userArgs[0]);
+
+var async = require('async');
+var Book = require('./models/book');
+var Author = require('./models/author')(sequelize);  // author is first module to be sequelized
+var Genre = require('./models/genre');
+var BookInstance = require('./models/bookinstance');
 
 
-var mongoose = require('mongoose');
-var mongoDB = userArgs[0];
-mongoose.connect(mongoDB, {useNewUrlParser: true, useUnifiedTopology: true});
-mongoose.Promise = global.Promise;
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+//TODO: try the database connection, and deal with any errors.
 
-var authors = []
-var genres = []
-var books = []
-var bookinstances = []
+var authors = [];
+var genres = [];
+var books = [];
+var bookinstances = [];
 
 function authorCreate(first_name, family_name, d_birth, d_death, cb) {
   authordetail = {first_name:first_name , family_name: family_name }
-  if (d_birth != false) authordetail.date_of_birth = d_birth
-  if (d_death != false) authordetail.date_of_death = d_death
+  if (d_birth != false) authordetail.date_of_birth = d_birth;
+  if (d_death != false) authordetail.date_of_death = d_death;
   
-  var author = new Author(authordetail);
-       
-  author.save(function (err) {
-    if (err) {
-      cb(err, null)
-      return
-    }
-    console.log('New Author: ' + author);
-    authors.push(author)
-    cb(null, author)
-  }  );
+  var author = Author.build(authordetail);
+  
+  author.save().then((result) => {
+    console.log('New Author: ' + result.name);
+    authors.push(result);
+    cb(null, result);
+  }).catch((err) => {
+    cb(err, null);
+  });
 }
 
 function genreCreate(name, cb) {
-  var genre = new Genre({ name: name });
+  /*var genre = new Genre({ name: name });
        
   genre.save(function (err) {
     if (err) {
@@ -58,7 +54,8 @@ function genreCreate(name, cb) {
     console.log('New Genre: ' + genre);
     genres.push(genre)
     cb(null, genre);
-  }   );
+  }   );*/
+  cb(null, null);  //TODO: remove this line once function has been sequelized
 }
 
 function bookCreate(title, summary, isbn, author, genre, cb) {
@@ -68,9 +65,9 @@ function bookCreate(title, summary, isbn, author, genre, cb) {
     author: author,
     isbn: isbn
   }
-  if (genre != false) bookdetail.genre = genre
+  if (genre != false) bookdetail.genre = genre;
     
-  var book = new Book(bookdetail);    
+  /*var book = new Book(bookdetail);    
   book.save(function (err) {
     if (err) {
       cb(err, null)
@@ -79,7 +76,8 @@ function bookCreate(title, summary, isbn, author, genre, cb) {
     console.log('New Book: ' + book);
     books.push(book)
     cb(null, book)
-  }  );
+  }  );*/
+  cb(null, null);  //TODO: remove this line once function has been sequelized  
 }
 
 
@@ -88,10 +86,10 @@ function bookInstanceCreate(book, imprint, due_back, status, cb) {
     book: book,
     imprint: imprint
   }    
-  if (due_back != false) bookinstancedetail.due_back = due_back
-  if (status != false) bookinstancedetail.status = status
+  if (due_back != false) bookinstancedetail.due_back = due_back;
+  if (status != false) bookinstancedetail.status = status;
     
-  var bookinstance = new BookInstance(bookinstancedetail);    
+  /*var bookinstance = new BookInstance(bookinstancedetail);    
   bookinstance.save(function (err) {
     if (err) {
       console.log('ERROR CREATING BookInstance: ' + bookinstance);
@@ -100,8 +98,9 @@ function bookInstanceCreate(book, imprint, due_back, status, cb) {
     }
     console.log('New BookInstance: ' + bookinstance);
     bookinstances.push(bookinstance)
-    cb(null, book)
-  }  );
+    cb(null, book)  //TODO: shouldn't this be bookinstance?
+  }  );*/
+  cb(null, null);  //TODO: remove this line once function has been sequelized
 }
 
 
@@ -158,7 +157,7 @@ function createBooks(cb) {
           bookCreate('Test Book 1', 'Summary of test book 1', 'ISBN111111', authors[4], [genres[0],genres[1]], callback);
         },
         function(callback) {
-          bookCreate('Test Book 2', 'Summary of test book 2', 'ISBN222222', authors[4], false, callback)
+          bookCreate('Test Book 2', 'Summary of test book 2', 'ISBN222222', authors[4], false, callback);
         }
         ],
         // optional callback
@@ -169,37 +168,37 @@ function createBooks(cb) {
 function createBookInstances(cb) {
     async.parallel([
         function(callback) {
-          bookInstanceCreate(books[0], 'London Gollancz, 2014.', false, 'Available', callback)
+          bookInstanceCreate(books[0], 'London Gollancz, 2014.', false, 'Available', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[1], ' Gollancz, 2011.', false, 'Loaned', callback)
+          bookInstanceCreate(books[1], ' Gollancz, 2011.', false, 'Loaned', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[2], ' Gollancz, 2015.', false, false, callback)
+          bookInstanceCreate(books[2], ' Gollancz, 2015.', false, false, callback);
         },
         function(callback) {
-          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback)
+          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback)
+          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback)
+          bookInstanceCreate(books[3], 'New York Tom Doherty Associates, 2016.', false, 'Available', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Available', callback)
+          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Available', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Maintenance', callback)
+          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Maintenance', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Loaned', callback)
+          bookInstanceCreate(books[4], 'New York, NY Tom Doherty Associates, LLC, 2015.', false, 'Loaned', callback);
         },
         function(callback) {
-          bookInstanceCreate(books[0], 'Imprint XXX2', false, false, callback)
+          bookInstanceCreate(books[0], 'Imprint XXX2', false, false, callback);
         },
         function(callback) {
-          bookInstanceCreate(books[1], 'Imprint XXX3', false, false, callback)
+          bookInstanceCreate(books[1], 'Imprint XXX3', false, false, callback);
         }
         ],
         // Optional callback
@@ -208,23 +207,27 @@ function createBookInstances(cb) {
 
 
 
-async.series([
+sequelize.sync().then(() => {  // sync the tables first, in case any don't exist yet.
+  async.series([
     createGenreAuthors,
     createBooks,
     createBookInstances
-],
-// Optional callback
-function(err, results) {
-    if (err) {
-        console.log('FINAL ERR: '+err);
-    }
-    else {
-        console.log('BOOKInstances: '+bookinstances);
-        
-    }
-    // All done, disconnect from database
-    mongoose.connection.close();
+  ],
+  // Optional callback
+  function(err, results) {
+      if (err) {
+          console.log('FINAL ERR: '+err);
+      }
+      else {
+          //console.log('BOOKInstances: '+bookinstances);
+          console.log('AUTHORS: '+authors.map((author) => '"'+author.name+'"'));  //TODO: remove this when bookinstances has been populated
+          
+      }
+      // All done, disconnect from database
+      sequelize.close();
+  });
 });
+
 
 
 
