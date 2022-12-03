@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 //console.log('This script populates some test books, authors, genres and bookinstances to your database. Specified database as argument - e.g.: populatedb mongodb+srv://cooluser:coolpassword@cluster0.a9azn.mongodb.net/local_library?retryWrites=true');
-console.log('This script populates some test books, authors, and genres to your database.');
+console.log('This script populates some test books, authors, genres, and bookinstances to your database.');
 
 // Get arguments passed on command line
 var userArgs = process.argv.slice(2);
@@ -14,10 +14,10 @@ const Sequelize = require('sequelize');
 const sequelize = new Sequelize(userArgs[0]);
 
 var async = require('async');
-var Book = require('./models/book')(sequelize);  // book is third module to be sequelized
+var Book = require('./models/book')(sequelize);  // book was third module to be sequelized
 var Author = require('./models/author')(sequelize);  // author was first module to be sequelized
-var Genre = require('./models/genre')(sequelize);  // genre is second module to be sequelized
-var BookInstance = require('./models/bookinstance');
+var Genre = require('./models/genre')(sequelize);  // genre was second module to be sequelized
+var BookInstance = require('./models/bookinstance')(sequelize);  // bookinstance is fourth and last module to be sequelized
 
 
 //TODO: try the database connection, and deal with any errors.
@@ -80,24 +80,23 @@ function bookCreate(title, summary, isbn, author, genre, cb) {
 
 function bookInstanceCreate(book, imprint, due_back, status, cb) {
   bookinstancedetail = { 
-    book: book,
+    bookId: book.id,
     imprint: imprint
   }    
   if (due_back != false) bookinstancedetail.due_back = due_back;
   if (status != false) bookinstancedetail.status = status;
     
-  /*var bookinstance = new BookInstance(bookinstancedetail);    
-  bookinstance.save(function (err) {
-    if (err) {
-      console.log('ERROR CREATING BookInstance: ' + bookinstance);
-      cb(err, null)
-      return
-    }
-    console.log('New BookInstance: ' + bookinstance);
-    bookinstances.push(bookinstance)
-    cb(null, book)  //TODO: shouldn't this be bookinstance?
-  }  );*/
-  cb(null, null);  //TODO: remove this line once function has been sequelized
+  var bookinstance = BookInstance.build(bookinstancedetail);    
+  
+  bookinstance.save().then((result) => {
+    console.log('New BookInstance: ' + bookinstance.imprint);
+    bookinstances.push(bookinstance);
+    cb(null, result);
+  }).catch((err) => {
+    console.log('ERROR CREATING BookInstance: ' + bookinstance.imprint);
+    cb(err, null);
+    return;
+  });
 }
 
 
@@ -216,10 +215,10 @@ sequelize.sync().then(() => {  // sync the tables first, in case any don't exist
           console.log('FINAL ERR: '+err);
       }
       else {
-          //console.log('BOOKInstances: '+bookinstances);
-          console.log('AUTHORS: '+authors.map((author) => '"'+author.name+'"'));  //TODO: remove this when bookinstances has been populated
-          console.log('GENRES: '+genres.map((genre) => '"'+genre.name+'"'));  //TODO: remove this when bookinstances has been populated
-          console.log('BOOKS: '+books.map((book) => '"'+book.title+'"'));  //TODO: remove this when bookinstances has been populated
+          console.log('BOOKInstances: '+JSON.stringify(bookinstances));
+          //console.log('AUTHORS: '+JSON.stringify(authors));
+          //console.log('GENRES: '+JSON.stringify(genres));
+          //console.log('BOOKS: '+JSON.stringify(books));
 
       }
       // All done, disconnect from database
