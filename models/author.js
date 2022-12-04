@@ -1,5 +1,8 @@
 const { DataTypes } = require('sequelize');
 const { DateTime } = require('luxon'); // for date handling
+const getDatabaseInstance = require('../db');
+
+const sequelize = getDatabaseInstance();
 
 const authorSchema = {
   first_name: { type: DataTypes.STRING(100), allowNull: false },
@@ -35,7 +38,7 @@ const authorSchema = {
   }}
 };
 
-const authorModel = (sequelize) => sequelize.define('Author', authorSchema, { tableName: 'AUTHOR_TEST_1' });
+const Author = sequelize.define('Author', authorSchema, { tableName: 'AUTHOR_TEST_1' });  // define author model
 
 // Export model.
-module.exports = authorModel;
+module.exports = Author;

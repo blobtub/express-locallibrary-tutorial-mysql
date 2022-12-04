@@ -6,17 +6,16 @@ const { body, validationResult } = require("express-validator");
 
 // Display list of all Genre.
 exports.genre_list = function (req, res, next) {
-  Genre.find()
-    .sort([["name", "ascending"]])
-    .exec(function (err, list_genres) {
-      if (err) {
-        return next(err);
-      }
+  Genre.findAll({order: [['name', 'ASC']]})
+    .then((list_genres) => {
       // Successful, so render.
       res.render("genre_list", {
         title: "Genre List",
         list_genres: list_genres,
-      });
+      });        
+    })
+    .catch((err) => {
+      return next(err);
     });
 };
 
@@ -24,12 +23,12 @@ exports.genre_list = function (req, res, next) {
 exports.genre_detail = function (req, res, next) {
   async.parallel(
     {
-      genre: function (callback) {
-        Genre.findById(req.params.id).exec(callback);
+      genre: async function (callback) {
+        return await Genre.findByPk(req.params.id);
       },
 
-      genre_books: function (callback) {
-        Book.find({ genre: req.params.id }).exec(callback);
+      genre_books: async function (callback) {
+        return await (await Genre.findByPk(req.params.id)).getBooks();  // inner query finds the genre; outer query returns the books of that genre.
       },
     },
     function (err, results) {

@@ -6,28 +6,23 @@ const { body, validationResult } = require("express-validator");
 
 // Display list of all BookInstances.
 exports.bookinstance_list = function (req, res, next) {
-  BookInstance.find()
-    .populate("book")
-    .exec(function (err, list_bookinstances) {
-      if (err) {
-        return next(err);
-      }
+  BookInstance.findAll({include: Book})
+    .then((list_bookinstances) => {
       // Successful, so render.
       res.render("bookinstance_list", {
         title: "Book Instance List",
         bookinstance_list: list_bookinstances,
-      });
+      });        
+    })
+    .catch((err) => {
+      return next(err);
     });
 };
 
 // Display detail page for a specific BookInstance.
 exports.bookinstance_detail = function (req, res, next) {
-  BookInstance.findById(req.params.id)
-    .populate("book")
-    .exec(function (err, bookinstance) {
-      if (err) {
-        return next(err);
-      }
+  BookInstance.findByPk(req.params.id, {include: Book})
+    .then((bookinstance) => {
       if (bookinstance == null) {
         // No results.
         var err = new Error("Book copy not found");
@@ -39,6 +34,9 @@ exports.bookinstance_detail = function (req, res, next) {
         title: "Book:",
         bookinstance: bookinstance,
       });
+    })
+    .catch((err) => {
+      return next(err);
     });
 };
 

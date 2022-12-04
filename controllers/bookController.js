@@ -10,20 +10,20 @@ var async = require("async");
 exports.index = function (req, res) {
   async.parallel(
     {
-      book_count: function (callback) {
-        Book.countDocuments({}, callback);
+      book_count: async function (callback) {
+        return await Book.count();
       },
-      book_instance_count: function (callback) {
-        BookInstance.countDocuments({}, callback);
+      book_instance_count: async function (callback) {
+        return await BookInstance.count();
       },
-      book_instance_available_count: function (callback) {
-        BookInstance.countDocuments({ status: "Available" }, callback);
+      book_instance_available_count: async function (callback) {
+        return await BookInstance.count({ where: { status: "Available" }});
       },
-      author_count: function (callback) {
-        Author.countDocuments({}, callback);
+      author_count: async function (callback) {
+        return await Author.count();
       },
-      genre_count: function (callback) {
-        Genre.countDocuments({}, callback);
+      genre_count: async function (callback) {
+        return await Genre.count();
       },
     },
     function (err, results) {
@@ -38,16 +38,16 @@ exports.index = function (req, res) {
 
 // Display list of all books.
 exports.book_list = function (req, res, next) {
-  Book.find({}, "title author")
-    .sort({ title: 1 })
-    .populate("author")
-    .exec(function (err, list_books) {
-      if (err) {
-        return next(err);
-      } else {
-        // Successful, so render
-        res.render("book_list", { title: "Book List", book_list: list_books });
-      }
+  Book.findAll({order: [['title', 'ASC']], include: Author})
+    .then((list_books) => {
+      // Successful, so render.
+      res.render("book_list", {
+        title: "Book List",
+        book_list: list_books,
+      });        
+    })
+    .catch((err) => {
+      return next(err);
     });
 };
 
@@ -55,14 +55,11 @@ exports.book_list = function (req, res, next) {
 exports.book_detail = function (req, res, next) {
   async.parallel(
     {
-      book: function (callback) {
-        Book.findById(req.params.id)
-          .populate("author")
-          .populate("genre")
-          .exec(callback);
+      book: async function (callback) {
+        return await Book.findByPk(req.params.id, {include: [Author, Genre]});
       },
-      book_instance: function (callback) {
-        BookInstance.find({ book: req.params.id }).exec(callback);
+      book_instance: async function (callback) {
+        return await (await Book.findByPk(req.params.id)).getBookInstances();  // inner query finds the book; outer query returns the book instances of that book.
       },
     },
     function (err, results) {

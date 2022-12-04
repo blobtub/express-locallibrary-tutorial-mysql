@@ -10,14 +10,14 @@ if (!userArgs[0].startsWith('mysql')) {
     return;
 }
 
-const Sequelize = require('sequelize');
-const sequelize = new Sequelize(userArgs[0]);
+const getDatabaseInstance = require('./db');
+const sequelize = getDatabaseInstance(userArgs[0]);
 
 var async = require('async');
-var Book = require('./models/book')(sequelize);  // book was third module to be sequelized
-var Author = require('./models/author')(sequelize);  // author was first module to be sequelized
-var Genre = require('./models/genre')(sequelize);  // genre was second module to be sequelized
-var BookInstance = require('./models/bookinstance')(sequelize);  // bookinstance is fourth and last module to be sequelized
+var Book = require('./models/book');
+var Author = require('./models/author');
+var Genre = require('./models/genre');
+var BookInstance = require('./models/bookinstance');
 
 
 //TODO: try the database connection, and deal with any errors.

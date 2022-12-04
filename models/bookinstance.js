@@ -1,5 +1,8 @@
 const { DataTypes } = require('sequelize');
 const { DateTime } = require("luxon"); //for date handling
+const getDatabaseInstance = require('../db');
+
+const sequelize = getDatabaseInstance();
 
 const bookInstanceSchema = {
   imprint: { type: DataTypes.STRING, allowNull: false },
@@ -21,15 +24,12 @@ const bookInstanceSchema = {
   }}
 };
 
-const bookInstanceModel = (sequelize) => {
-  var Book = require('./book')(sequelize);
+var Book = require('./book');
 
-  BookInstance = sequelize.define('BookInstance', bookInstanceSchema, { tableName: 'BOOK_INSTANCE_TEST_1' });
-  Book.hasMany(BookInstance, {foreignKey: {name: 'bookId', allowNull: true}});
-  BookInstance.belongsTo(Book, {foreignKey: {name: 'bookId', allowNull: true}});  // Reference to the associated book.
+BookInstance = sequelize.define('BookInstance', bookInstanceSchema, { tableName: 'BOOK_INSTANCE_TEST_1' });  // define book instance model
 
-  return BookInstance;
-}
+Book.hasMany(BookInstance, {foreignKey: {name: 'bookId', allowNull: true}});
+BookInstance.belongsTo(Book, {foreignKey: {name: 'bookId', allowNull: true}});  // Reference to the associated book.
 
 // Export model.
-module.exports = bookInstanceModel;
+module.exports = BookInstance;

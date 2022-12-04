@@ -6,17 +6,16 @@ const { body, validationResult } = require("express-validator");
 
 // Display list of all Authors.
 exports.author_list = function (req, res, next) {
-  Author.find()
-    .sort([["family_name", "ascending"]])
-    .exec(function (err, list_authors) {
-      if (err) {
-        return next(err);
-      }
+  Author.findAll({order: [['family_name', 'ASC']]})
+    .then((list_authors) => {
       // Successful, so render.
       res.render("author_list", {
         title: "Author List",
         author_list: list_authors,
-      });
+      });        
+    })
+    .catch((err) => {
+      return next(err);
     });
 };
 
@@ -24,11 +23,11 @@ exports.author_list = function (req, res, next) {
 exports.author_detail = function (req, res, next) {
   async.parallel(
     {
-      author: function (callback) {
-        Author.findById(req.params.id).exec(callback);
+      author: async function (callback) {
+        return await Author.findByPk(req.params.id);
       },
-      authors_books: function (callback) {
-        Book.find({ author: req.params.id }, "title summary").exec(callback);
+      authors_books: async function (callback) {
+        return await (await Author.findByPk(req.params.id)).getBooks();  // inner query finds the author; outer query returns the books of that author.
       },
     },
     function (err, results) {

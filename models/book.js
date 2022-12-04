@@ -1,4 +1,7 @@
 const { DataTypes } = require('sequelize');
+const getDatabaseInstance = require('../db');
+
+const sequelize = getDatabaseInstance();
 
 const bookSchema = {
   title: { type: DataTypes.STRING, allowNull: false },
@@ -9,18 +12,15 @@ const bookSchema = {
   }}
 };
 
-const bookModel = (sequelize) => {
-  var Author = require('./author')(sequelize);
-  var Genre = require('./genre')(sequelize);
+var Author = require('./author');
+var Genre = require('./genre');
 
-  Book = sequelize.define('Book', bookSchema, { tableName: 'BOOK_TEST_1' });
-  Author.hasMany(Book, {foreignKey: {name: 'authorId', allowNull: false}});
-  Book.belongsTo(Author, {foreignKey: {name: 'authorId', allowNull: false}});
-  Genre.belongsToMany(Book, {through: 'GENRE_BOOK_LINK_TEST_1', foreignKey: 'bookId', otherKey: 'genreId'});
-  Book.belongsToMany(Genre, {through: 'GENRE_BOOK_LINK_TEST_1', foreignKey: 'bookId', otherKey: 'genreId'});
+Book = sequelize.define('Book', bookSchema, { tableName: 'BOOK_TEST_1' });  // define book model
 
-  return Book;
-};
+Author.hasMany(Book, {foreignKey: {name: 'authorId', allowNull: false}});
+Book.belongsTo(Author, {foreignKey: {name: 'authorId', allowNull: false}});
+Genre.belongsToMany(Book, {through: 'GENRE_BOOK_LINK_TEST_1', foreignKey: 'genreId', otherKey: 'bookId'});
+Book.belongsToMany(Genre, {through: 'GENRE_BOOK_LINK_TEST_1', foreignKey: 'bookId', otherKey: 'genreId'});
 
 // Export model.
-module.exports = bookModel;
+module.exports = Book;

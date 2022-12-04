@@ -1,4 +1,7 @@
 const { DataTypes } = require('sequelize');
+const getDatabaseInstance = require('../db');
+
+const sequelize = getDatabaseInstance();
 
 const genreSchema = {
   name: { type: DataTypes.STRING(100), allowNull: false, validate: {
@@ -9,7 +12,7 @@ const genreSchema = {
   }}
 };
 
-const genreModel = (sequelize) => sequelize.define('Genre', genreSchema, { tableName: 'GENRE_TEST_1' });
+const Genre = sequelize.define('Genre', genreSchema, { tableName: 'GENRE_TEST_1' });  // define genre model
 
 // Export model.
-module.exports = genreModel;
+module.exports = Genre;
