@@ -87,11 +87,11 @@ exports.book_create_get = function (req, res, next) {
   // Get all authors and genres, which we can use for adding to our book.
   async.parallel(
     {
-      authors: function (callback) {
-        Author.find(callback);
+      authors: async function (callback) {
+        return await Author.findAll();
       },
-      genres: function (callback) {
-        Genre.find(callback);
+      genres: async function (callback) {
+        return await Genre.findAll();
       },
     },
     function (err, results) {
@@ -139,13 +139,13 @@ exports.book_create_post = [
     const errors = validationResult(req);
 
     // Create a Book object with escaped and trimmed data.
-    var book = new Book({
+    var book = Book.build({
       title: req.body.title,
-      author: req.body.author,
+      authorId: parseInt(req.body.author),
       summary: req.body.summary,
-      isbn: req.body.isbn,
-      genre: req.body.genre,
+      isbn: req.body.isbn
     });
+    selectedGenres = req.body.genre.map((genreId) => parseInt(genreId));
 
     if (!errors.isEmpty()) {
       // There are errors. Render form again with sanitized values/error messages.
@@ -153,11 +153,11 @@ exports.book_create_post = [
       // Get all authors and genres for form.
       async.parallel(
         {
-          authors: function (callback) {
-            Author.find(callback);
+          authors: async function (callback) {
+            return await Author.findAll();
           },
-          genres: function (callback) {
-            Genre.find(callback);
+          genres: async function (callback) {
+            return await Genre.findAll();
           },
         },
         function (err, results) {
@@ -167,7 +167,7 @@ exports.book_create_post = [
 
           // Mark our selected genres as checked.
           for (let i = 0; i < results.genres.length; i++) {
-            if (book.genre.indexOf(results.genres[i]._id) > -1) {
+            if (selectedGenres.indexOf(results.genres[i].id) > -1) {
               results.genres[i].checked = "true";
             }
           }
@@ -183,13 +183,18 @@ exports.book_create_post = [
       return;
     } else {
       // Data from form is valid. Save book.
-      book.save(function (err) {
-        if (err) {
+      book.save()
+        .then((result) => {
+          if (selectedGenres.length > 0) return book.addGenres(selectedGenres);
+          return result;
+        })
+        .then((result) => {
+          // Successful - redirect to new book record.
+          res.redirect(book.url);
+        })
+        .catch((err) => {
           return next(err);
-        }
-        // Successful - redirect to new book record.
-        res.redirect(book.url);
-      });
+        });
     }
   },
 ];
