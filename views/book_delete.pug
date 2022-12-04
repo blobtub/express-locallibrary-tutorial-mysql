@@ -5,11 +5,11 @@ block content
   h1 #{title}: #{book.title}
   
   p #[strong Author:] 
-    a(href=book.author.url) #{book.author.name}
+    a(href=book.Author.url) #{book.Author.name}
   p #[strong Summary:] #{book.summary}
   p #[strong ISBN:] #{book.isbn}
   p #[strong Genre:] 
-    each val in book.genre
+    each val in book.Genres
       a(href=val.url) #{val.name}
       |, 
 
@@ -35,13 +35,13 @@ block content
         if book_copy.status!='Available'
           p #[strong Due back:] #{book_copy.due_back}
         p #[strong Id:] 
-          a(href=book_copy.url) #{book_copy._id}
+          a(href=book_copy.url) #{book_copy.id}
 
   else
     p Do you really want to delete this Book?
     
     form(method='POST' action='')
       div.form-group
-        input#id.form-control(type='hidden',name='id', required='true', value=book._id )
+        input#id.form-control(type='hidden',name='id', required='true', value=book.id )
 
       button.btn.btn-primary(type='submit') Delete

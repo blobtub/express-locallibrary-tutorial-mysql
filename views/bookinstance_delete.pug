@@ -8,10 +8,10 @@ block content
   
   div(style="margin-left:20px")
 
-    p #[strong ID]: #{bookinstance._id}
+    p #[strong ID]: #{bookinstance.id}
   
     p #[strong Title:] 
-      a(href=bookinstance.book.url) #{bookinstance.book.title}
+      a(href=bookinstance.Book.url) #{bookinstance.Book.title}
     
     p #[strong Imprint:] #{bookinstance.imprint}
 
@@ -28,6 +28,6 @@ block content
 
   form(method='POST' action='')
     div.form-group
-      input#id.form-control(type='hidden',name='id', required='true', value=bookinstance._id )
+      input#id.form-control(type='hidden',name='id', required='true', value=bookinstance.id )
 
     button.btn.btn-primary(type='submit') Delete

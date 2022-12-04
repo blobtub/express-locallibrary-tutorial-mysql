@@ -110,11 +110,11 @@ exports.genre_create_post = [
 exports.genre_delete_get = function (req, res, next) {
   async.parallel(
     {
-      genre: function (callback) {
-        Genre.findById(req.params.id).exec(callback);
+      genre: async function (callback) {
+        return await Genre.findByPk(req.params.id);
       },
-      genre_books: function (callback) {
-        Book.find({ genre: req.params.id }).exec(callback);
+      genre_books: async function (callback) {
+        return await Book.findAll({ include: { model: Genre, where: { id: req.params.id }}});
       },
     },
     function (err, results) {
@@ -139,11 +139,11 @@ exports.genre_delete_get = function (req, res, next) {
 exports.genre_delete_post = function (req, res, next) {
   async.parallel(
     {
-      genre: function (callback) {
-        Genre.findById(req.params.id).exec(callback);
+      genre: async function (callback) {
+        return await Genre.findByPk(req.params.id);
       },
-      genre_books: function (callback) {
-        Book.find({ genre: req.params.id }).exec(callback);
+      genre_books: async function (callback) {
+        return await Book.findAll({ include: { model: Genre, where: { id: req.params.id }}});
       },
     },
     function (err, results) {
@@ -161,13 +161,14 @@ exports.genre_delete_post = function (req, res, next) {
         return;
       } else {
         // Genre has no books. Delete object and redirect to the list of genres.
-        Genre.findByIdAndRemove(req.body.id, function deleteGenre(err) {
-          if (err) {
+        Genre.destroy({where: {id: req.body.id}})
+          .then((result) => {
+            // Success - go to genres list.
+            res.redirect("/catalog/genres");
+          })
+          .catch((err) => {
             return next(err);
-          }
-          // Success - go to genres list.
-          res.redirect("/catalog/genres");
-        });
+          });
       }
     }
   );

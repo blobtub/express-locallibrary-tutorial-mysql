@@ -203,14 +203,11 @@ exports.book_create_post = [
 exports.book_delete_get = function (req, res, next) {
   async.parallel(
     {
-      book: function (callback) {
-        Book.findById(req.params.id)
-          .populate("author")
-          .populate("genre")
-          .exec(callback);
+      book: async function (callback) {
+        return await Book.findByPk(req.params.id, {include: [Author, Genre]});
       },
-      book_bookinstances: function (callback) {
-        BookInstance.find({ book: req.params.id }).exec(callback);
+      book_bookinstances: async function (callback) {
+        return await BookInstance.findAll({ where: { bookId: req.params.id }});
       },
     },
     function (err, results) {
@@ -237,14 +234,11 @@ exports.book_delete_post = function (req, res, next) {
 
   async.parallel(
     {
-      book: function (callback) {
-        Book.findById(req.body.id)
-          .populate("author")
-          .populate("genre")
-          .exec(callback);
+      book: async function (callback) {
+        return await Book.findByPk(req.body.id, {include: [Author, Genre]});
       },
-      book_bookinstances: function (callback) {
-        BookInstance.find({ book: req.body.id }).exec(callback);
+      book_bookinstances: async function (callback) {
+        return await BookInstance.findAll({ where: { bookId: req.body.id }});
       },
     },
     function (err, results) {
@@ -262,13 +256,14 @@ exports.book_delete_post = function (req, res, next) {
         return;
       } else {
         // Book has no BookInstance objects. Delete object and redirect to the list of books.
-        Book.findByIdAndRemove(req.body.id, function deleteBook(err) {
-          if (err) {
+        Book.destroy({where: {id: req.body.id}})
+          .then((result) => {
+            // Success - got to books list.
+            res.redirect("/catalog/books");
+          })
+          .catch((err) => {
             return next(err);
-          }
-          // Success - got to books list.
-          res.redirect("/catalog/books");
-        });
+          });
       }
     }
   );

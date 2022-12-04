@@ -121,11 +121,11 @@ exports.author_create_post = [
 exports.author_delete_get = function (req, res, next) {
   async.parallel(
     {
-      author: function (callback) {
-        Author.findById(req.params.id).exec(callback);
+      author: async function (callback) {
+        return await Author.findByPk(req.params.id);
       },
-      authors_books: function (callback) {
-        Book.find({ author: req.params.id }).exec(callback);
+      authors_books: async function (callback) {
+        return await Book.findAll({ where: { authorId: req.params.id }});
       },
     },
     function (err, results) {
@@ -150,11 +150,11 @@ exports.author_delete_get = function (req, res, next) {
 exports.author_delete_post = function (req, res, next) {
   async.parallel(
     {
-      author: function (callback) {
-        Author.findById(req.body.authorid).exec(callback);
+      author: async function (callback) {
+        return await Author.findByPk(req.body.authorid);
       },
-      authors_books: function (callback) {
-        Book.find({ author: req.body.authorid }).exec(callback);
+      authors_books: async function (callback) {
+        return await Book.findAll({ where: { authorId: req.body.authorid }});
       },
     },
     function (err, results) {
@@ -172,13 +172,14 @@ exports.author_delete_post = function (req, res, next) {
         return;
       } else {
         // Author has no books. Delete object and redirect to the list of authors.
-        Author.findByIdAndRemove(req.body.authorid, function deleteAuthor(err) {
-          if (err) {
+        Author.destroy({where: {id: req.body.authorid}})
+          .then((result) => {
+            // Success - go to author list.
+            res.redirect("/catalog/authors");
+          })
+          .catch((err) => {
             return next(err);
-          }
-          // Success - go to author list.
-          res.redirect("/catalog/authors");
-        });
+          });
       }
     }
   );

@@ -115,12 +115,8 @@ exports.bookinstance_create_post = [
 
 // Display BookInstance delete form on GET.
 exports.bookinstance_delete_get = function (req, res, next) {
-  BookInstance.findById(req.params.id)
-    .populate("book")
-    .exec(function (err, bookinstance) {
-      if (err) {
-        return next(err);
-      }
+  BookInstance.findByPk(req.params.id, {include: Book})
+    .then((bookinstance) => {
       if (bookinstance == null) {
         // No results.
         res.redirect("/catalog/bookinstances");
@@ -130,19 +126,23 @@ exports.bookinstance_delete_get = function (req, res, next) {
         title: "Delete BookInstance",
         bookinstance: bookinstance,
       });
+    })
+    .catch((err) => {
+        return next(err);
     });
 };
 
 // Handle BookInstance delete on POST.
 exports.bookinstance_delete_post = function (req, res, next) {
   // Assume valid BookInstance id in field.
-  BookInstance.findByIdAndRemove(req.body.id, function deleteBookInstance(err) {
-    if (err) {
+  BookInstance.destroy({where: {id: req.body.id}})
+    .then((result) => {
+      // Success, so redirect to list of BookInstance items.
+      res.redirect("/catalog/bookinstances");
+    })
+    .catch((err) => {
       return next(err);
-    }
-    // Success, so redirect to list of BookInstance items.
-    res.redirect("/catalog/bookinstances");
-  });
+    });
 };
 
 // Display BookInstance update form on GET.
