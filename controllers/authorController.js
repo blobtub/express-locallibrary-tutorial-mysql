@@ -187,24 +187,25 @@ exports.author_delete_post = function (req, res, next) {
 
 // Display Author update form on GET.
 exports.author_update_get = function (req, res, next) {
-  Author.findById(req.params.id, function (err, author) {
-    if (err) {
+  Author.findByPk(req.params.id)
+    .then((author) => {
+      if (author == null) {
+        // No results.
+        var err = new Error("Author not found");
+        err.status = 404;
+        return next(err);
+      }
+      // Success.
+      res.render("author_form", { title: "Update Author", author: author });
+    })
+    .catch((err) => {
       return next(err);
-    }
-    if (author == null) {
-      // No results.
-      var err = new Error("Author not found");
-      err.status = 404;
-      return next(err);
-    }
-    // Success.
-    res.render("author_form", { title: "Update Author", author: author });
-  });
+    });
 };
 
 // Handle Author update on POST.
 exports.author_update_post = [
-  // Validate and santize fields.
+  // Validate and sanitize fields.
   body("first_name")
     .trim()
     .isLength({ min: 1 })
@@ -234,13 +235,13 @@ exports.author_update_post = [
     const errors = validationResult(req);
 
     // Create Author object with escaped and trimmed data (and the old id!)
-    var author = new Author({
+    values = {
       first_name: req.body.first_name,
       family_name: req.body.family_name,
       date_of_birth: req.body.date_of_birth,
       date_of_death: req.body.date_of_death,
-      _id: req.params.id,
-    });
+      id: req.params.id };
+    var author = Author.build(values);
 
     if (!errors.isEmpty()) {
       // There are errors. Render the form again with sanitized values and error messages.
@@ -252,18 +253,14 @@ exports.author_update_post = [
       return;
     } else {
       // Data from form is valid. Update the record.
-      Author.findByIdAndUpdate(
-        req.params.id,
-        author,
-        {},
-        function (err, theauthor) {
-          if (err) {
-            return next(err);
-          }
-          // Successful - redirect to genre detail page.
-          res.redirect(theauthor.url);
-        }
-      );
+      Author.update(values, { where: { id: req.params.id }})
+        .then((result) => {
+            // Successful - redirect to genre detail page.
+            res.redirect(author.url);
+          })
+        .catch((err) => {
+          return next(err);
+        });
     }
   },
 ];

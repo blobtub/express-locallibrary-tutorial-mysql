@@ -176,24 +176,25 @@ exports.genre_delete_post = function (req, res, next) {
 
 // Display Genre update form on GET.
 exports.genre_update_get = function (req, res, next) {
-  Genre.findById(req.params.id, function (err, genre) {
-    if (err) {
-      return next(err);
-    }
-    if (genre == null) {
-      // No results.
-      var err = new Error("Genre not found");
-      err.status = 404;
-      return next(err);
-    }
-    // Success.
-    res.render("genre_form", { title: "Update Genre", genre: genre });
-  });
+  Genre.findByPk(req.params.id)
+    .then((genre) => {
+      if (genre == null) {
+        // No results.
+        var err = new Error("Genre not found");
+        err.status = 404;
+        return next(err);
+      }
+      // Success.
+      res.render("genre_form", { title: "Update Genre", genre: genre });
+    })
+    .catch((err) => {
+      return next(err);  
+    });
 };
 
 // Handle Genre update on POST.
 exports.genre_update_post = [
-  // Validate and sanitze the name field.
+  // Validate and sanitize the name field.
   body("name", "Genre name must contain at least 3 characters")
     .trim()
     .isLength({ min: 3 })
@@ -205,10 +206,10 @@ exports.genre_update_post = [
     const errors = validationResult(req);
 
     // Create a genre object with escaped and trimmed data (and the old id!)
-    var genre = new Genre({
+    values = {
       name: req.body.name,
-      _id: req.params.id,
-    });
+      id: req.params.id };
+    var genre = Genre.build(values);
 
     if (!errors.isEmpty()) {
       // There are errors. Render the form again with sanitized values and error messages.
@@ -220,18 +221,14 @@ exports.genre_update_post = [
       return;
     } else {
       // Data from form is valid. Update the record.
-      Genre.findByIdAndUpdate(
-        req.params.id,
-        genre,
-        {},
-        function (err, thegenre) {
-          if (err) {
-            return next(err);
-          }
+      Genre.update(values, { where: { id: req.params.id }})
+        .then((result) => {
           // Successful - redirect to genre detail page.
-          res.redirect(thegenre.url);
-        }
-      );
+          res.redirect(genre.url);
+        })
+        .catch((err) => {
+          return next(err);
+        });
     }
   },
 ];
